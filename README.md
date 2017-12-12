@@ -15,6 +15,12 @@ of the latest attacks and defenses.
 In particular, we always welcome help towards resolving the [issues](https://github.com/tensorflow/cleverhans/issues)
 currently open.
 
+## Attacking Binarized Neural Networks
++ `cleverhans_tutorials/mnist_attack.py` - white-box MNIST attacks
++ `cleverhans_tutorials/mnist_blackbox.py` - black-box MNIST attack
++ `examples/cifar10_attack` - white-box CIFAR-10 attacks
++ `examples/cifar10_blackbox` - black-box CIFAR-10 attack
+
 ## Setting up CleverHans
 
 ### Dependencies

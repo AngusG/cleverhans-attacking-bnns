@@ -109,7 +109,7 @@ class Linear(Layer):
                                                        keep_dims=True))
             self.W = tf.get_variable(
                 "W", initializer=init)
-            self.W_summ = tf.summary.histogram('W', values=self.W)
+            W_summ = tf.summary.histogram('W', values=self.W)
 
     def fprop(self, x, reuse):
 
@@ -117,13 +117,13 @@ class Linear(Layer):
         # this works with white-box
         with tf.variable_scope(self.detail + self.name + '_fprop', reuse):
 
-            a = tf.matmul(x, self.W)  # + self.b
-            a_u, a_v = tf.nn.moments(tf.abs(a), axes=[0], keep_dims=False)
-            self.a_summ = tf.summary.histogram('a', values=a)
-            self.a_u_summ = tf.summary.scalar("a_u", tf.reduce_mean(a_u))
-            self.a_v_summ = tf.summary.scalar("a_v", tf.reduce_mean(a_v))
+            x = tf.matmul(x, self.W)  # + self.b
+            a_u, a_v = tf.nn.moments(tf.abs(x), axes=[0], keep_dims=False)
+            a_summ = tf.summary.histogram('a', values=x)
+            a_u_summ = tf.summary.scalar("a_u", tf.reduce_mean(a_u))
+            a_v_summ = tf.summary.scalar("a_v", tf.reduce_mean(a_v))
 
-            return a
+            return x
 
 
 class Conv2DRand(Layer):
@@ -154,7 +154,7 @@ class Conv2DRand(Layer):
             init = tf.truncated_normal(
                 kernel_shape, stddev=0.2, dtype=tf.float32)
             self.kernels = tf.get_variable("k", initializer=init)
-            self.k_summ = tf.summary.histogram(
+            k_summ = tf.summary.histogram(
                 name="k", values=self.kernels)
 
             if self.binary:
@@ -168,7 +168,7 @@ class Conv2DRand(Layer):
                     self.kernels = MultivariateNormalDiag(
                         loc=self.kernels).sample()
 
-            self.k_rand_summ = tf.summary.histogram(
+            k_rand_summ = tf.summary.histogram(
                 name="k_rand", values=self.kernels)
 
             orig_input_batch_size = input_shape[0]
@@ -185,24 +185,21 @@ class Conv2DRand(Layer):
         # need variable_scope here because the batch_norm layer creates
         # variables internally
         with tf.variable_scope(self.scope_name + '_fprop', reuse=reuse) as scope:
-            # with tf.name_scope(self.scope_name + '_fprop') as scope:
 
             if self.binary:
                 # center input to quantization op
                 x = tf.contrib.layers.batch_norm(
                     x, epsilon=BN_EPSILON, is_training=self.phase,
                     reuse=reuse, scope=scope)
-                self.x = self.quantize(x)
-                a = tf.nn.conv2d(self.x, self.kernels, (1,) +
-                                 tuple(self.strides) + (1,), self.padding)
-            a = tf.nn.conv2d(x, self.kernels, (1,) +
+                x = self.quantize(x)
+            x = tf.nn.conv2d(x, self.kernels, (1,) +
                              tuple(self.strides) + (1,), self.padding)
-            a_u, a_v = tf.nn.moments(tf.abs(a), axes=[0], keep_dims=False)
-            self.a_summ = tf.summary.histogram('a', values=a)
-            self.a_u_summ = tf.summary.scalar("a_u", tf.reduce_mean(a_u))
-            self.a_v_summ = tf.summary.scalar("a_v", tf.reduce_mean(a_v))
+            a_u, a_v = tf.nn.moments(tf.abs(x), axes=[0], keep_dims=False)
+            a_summ = tf.summary.histogram('a', values=x)
+            a_u_summ = tf.summary.scalar("a_u", tf.reduce_mean(a_u))
+            a_v_summ = tf.summary.scalar("a_v", tf.reduce_mean(a_v))
 
-            return a
+            return x
 
 
 class Conv2D(Layer):
@@ -235,12 +232,12 @@ class Conv2D(Layer):
                 init = init / tf.sqrt(1e-7 + tf.reduce_sum(tf.square(init),
                                                            axis=(0, 1, 2)))
             self.kernels = tf.get_variable("k", initializer=init)
-            self.k_summ = tf.summary.histogram(
+            k_summ = tf.summary.histogram(
                 name="k", values=self.kernels)
 
             if self.binary:
                 self.kernels = self.quantize(self.kernels)
-                self.k_bin_summ = tf.summary.histogram(
+                k_bin_summ = tf.summary.histogram(
                     name="k_bin", values=self.kernels)
 
             orig_input_batch_size = input_shape[0]
@@ -257,24 +254,21 @@ class Conv2D(Layer):
         # need variable_scope here because the batch_norm layer creates
         # variables internally
         with tf.variable_scope(self.scope_name + '_fprop', reuse=reuse) as scope:
-            # with tf.name_scope(self.scope_name + '_fprop') as scope:
 
             if self.binary:
                 # center input to quantization op
                 x = tf.contrib.layers.batch_norm(
                     x, epsilon=BN_EPSILON, is_training=self.phase,
                     reuse=reuse, scope=scope)
-                self.x = self.quantize(x)
-                a = tf.nn.conv2d(self.x, self.kernels, (1,) +
-                                 tuple(self.strides) + (1,), self.padding)
-            a = tf.nn.conv2d(x, self.kernels, (1,) +
+                x = self.quantize(x)
+            x = tf.nn.conv2d(x, self.kernels, (1,) +
                              tuple(self.strides) + (1,), self.padding)
-            a_u, a_v = tf.nn.moments(tf.abs(a), axes=[0], keep_dims=False)
-            self.a_summ = tf.summary.histogram('a', values=a)
-            self.a_u_summ = tf.summary.scalar("a_u", tf.reduce_mean(a_u))
-            self.a_v_summ = tf.summary.scalar("a_v", tf.reduce_mean(a_v))
+            a_u, a_v = tf.nn.moments(tf.abs(x), axes=[0], keep_dims=False)
+            a_summ = tf.summary.histogram('a', values=x)
+            a_u_summ = tf.summary.scalar("a_u", tf.reduce_mean(a_u))
+            a_v_summ = tf.summary.scalar("a_v", tf.reduce_mean(a_v))
 
-            return a
+            return x
 
 
 class ReLU(Layer):
@@ -378,14 +372,14 @@ def make_basic_cnn(phase, temperature, detail, nb_filters=64, nb_classes=10,
 
 
 def make_scaled_rand_cnn(phase, temperature, detail, nb_filters=64, nb_classes=10,
-                   input_shape=(None, 28, 28, 1)):
+                         input_shape=(None, 28, 28, 1)):
     layers = [Conv2D(False, nb_filters, (8, 8), (2, 2), "SAME", phase, detail + 'conv1'),
               ReLU(),
               Conv2D(False, nb_filters * 2, (6, 6),
                      (2, 2), "VALID", phase, detail + 'conv2'),
               ReLU(),
               Conv2DRand(False, nb_filters * 2, (5, 5),
-                     (1, 1), "VALID", phase, detail + 'conv3'),
+                         (1, 1), "VALID", phase, detail + 'conv3'),
               SReLU(detail + 'srelu3_fp'),
               Flatten(),
               Linear(nb_classes, detail),
